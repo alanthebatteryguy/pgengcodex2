@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx convex dev:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:risa.com)",
+      "Bash(node:*)",
+      "Bash(npm run dev:*)",
+      "Bash(kill:*)",
+      "Bash(npm run convex:dev:*)"
+    ],
+    "deny": []
+  }
+}

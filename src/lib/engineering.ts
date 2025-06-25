@@ -314,7 +314,11 @@ export function calculateTwoWayPTReinforcement(
   fc: number, // concrete strength (psi)
   fy: number = 60000, // rebar yield (psi)
   tensileStress: number = 0 // max tensile stress under service loads (psi)
-): { negMoment: number; distribution: number; total: number } {
+): {
+  negativeMomentSteel: { As: number; ratio: number; location: string };
+  distributionSteel: { As: number; ratio: number; spacing: number };
+  totalSteelRatio: number;
+} {
   
   // ACI 24.4.3.2 - Negative moment reinforcement
   // As = 0.00075 * h * l2
@@ -332,11 +336,28 @@ export function calculateTwoWayPTReinforcement(
   
   // Distribution reinforcement
   const tempShrink = calculateTemperatureShrinkageSteel(thickness, fy);
-  
+
+  const d = thickness - 1.5; // effective depth approximation
+  const negRatio = As_neg / (12 * d);
+  const negLocation = `Within ${1.5 * thickness} inches from support`;
+  const As_dist = tempShrink.area;
+  const distributionRatio = tempShrink.ratio;
+  const distSpacing = tempShrink.spacing;
+  const totalArea = Math.max(As_neg + additionalAs, As_dist);
+  const totalSteelRatio = totalArea / (12 * d);
+
   return {
-    negMoment: As_neg,
-    distribution: tempShrink.area,
-    total: Math.max(As_neg + additionalAs, tempShrink.area)
+    negativeMomentSteel: {
+      As: As_neg,
+      ratio: negRatio,
+      location: negLocation
+    },
+    distributionSteel: {
+      As: As_dist,
+      ratio: distributionRatio,
+      spacing: distSpacing
+    },
+    totalSteelRatio
   };
 }
 
@@ -364,6 +385,7 @@ export function calculateTotalMildSteel(
   
   // 3. Two-way slab requirements
   const twoWay = calculateTwoWayPTReinforcement(span, span, thickness, fc, fy, serviceStress);
+  const twoWayArea = twoWay.totalSteelRatio * 12 * d;
   
   // Determine governing case
   let governing = tempShrink.area;
@@ -374,15 +396,15 @@ export function calculateTotalMildSteel(
     governingCase = "minimum bonded (ACI 8.6.1)";
   }
   
-  if (twoWay.total > governing) {
-    governing = twoWay.total;
+  if (twoWayArea > governing) {
+    governing = twoWayArea;
     governingCase = "two-way PT slab (ACI 24.4.3)";
   }
   
   return {
     tempShrinkage: tempShrink.area,
     bonded: bonded,
-    twoWay: twoWay.total,
+    twoWay: twoWayArea,
     governing: governing,
     governingCase: governingCase
   };
